@@ -4,7 +4,11 @@ const Total = (props) => {
     0,
   );
 
-  return <p>Number of exercises {totalExercises}</p>;
+  return (
+    <p style={{ fontWeight: "bold" }}>
+      Total Number of Exercises: {totalExercises}
+    </p>
+  );
 };
 
 export default Total;
