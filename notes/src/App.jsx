@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 const App = () => {
   const [notes, setNotes] = useState([]);
-  const [newNote, setNewNote] = useState("a new note...");
+  const [newNote, setNewNote] = useState("");
   const [showAll, setShowAll] = useState(true);
 
   // get the data from the json server
@@ -19,12 +19,13 @@ const App = () => {
     event.preventDefault();
     const noteObject = {
       content: newNote,
-      important: Math.random() > 0.5,
-      id: String(notes.length + 1),
+      important: Math.random() < 0.5,
     };
 
-    setNotes(notes.concat(noteObject));
-    setNewNote("");
+    axios.post("http://localhost:3001/notes", noteObject).then((response) => {
+      setNotes(notes.concat(response.data));
+      setNewNote("");
+    });
   };
 
   // input handler
