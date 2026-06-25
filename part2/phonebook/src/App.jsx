@@ -1,26 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import PersonsList from "./components/PersonsList";
+import axios from "axios";
 
 const App = () => {
-  const names = [
-    { id: 1, name: "Arto Hellas", number: "040-123456" },
-    { id: 2, name: "Ado Lovelase", number: "046-987-6543" },
-  ];
-  const [persons, setPersons] = useState(names);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
 
+  // get persons fron the server
+  useEffect(() => {
+    axios.get("http://localhost:3001/persons").then((response) => {
+      setPersons(response.data);
+    });
+  }, []);
+
+  // handler for name input
   const handleNameChange = (e) => {
     setNewName(e.target.value);
   };
 
+  // handler for number input
   const handleNumberChange = (e) => {
     setNewNumber(e.target.value);
   };
 
+  // handler for add button
   const addName = (e) => {
     e.preventDefault();
 
@@ -44,6 +51,7 @@ const App = () => {
     setNewNumber("");
   };
 
+  // filtering
   const handleFilterChange = (e) => {
     setFilter(e.target.value);
   };
@@ -55,22 +63,23 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
 
-      <h3> Add a new person</h3>
+      <div>
+        <h3>Add a new person</h3>
+        <PersonForm
+          addName={addName}
+          newName={newName}
+          handleNameChange={handleNameChange}
+          newNumber={newNumber}
+          handleNumberChange={handleNumberChange}
+        />
+      </div>
 
-      <PersonForm
-        addName={addName}
-        newName={newName}
-        handleNameChange={handleNameChange}
-        newNumber={newNumber}
-        handleNumberChange={handleNumberChange}
-      />
-
-      <h2>Numbers</h2>
-
-      <PersonsList filteredPersons={filteredPersons} />
+      <div>
+        <h2>Numbers</h2>
+        <PersonsList filteredPersons={filteredPersons} />
+      </div>
     </div>
   );
 };
