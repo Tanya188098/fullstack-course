@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import PersonsList from "./components/PersonsList";
-import axios from "axios";
+import personsService from "./services/persons";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -12,8 +12,8 @@ const App = () => {
 
   // get persons fron the server
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((response) => {
-      setPersons(response.data);
+    personsService.getAll().then((initialPerson) => {
+      setPersons(initialPerson);
     });
   }, []);
 
@@ -28,32 +28,82 @@ const App = () => {
   };
 
   // handler for add button
-  const addName = (e) => {
+  const addPerson = (e) => {
     e.preventDefault();
 
-    if (
-      persons.find(
-        (person) => person.name.toLowerCase() === newName.toLowerCase(),
-      )
-    ) {
-      alert(`${newName} is already added to phonebook`);
+    if (newName.trim() === "" || newNumber.trim() === "") {
+      alert("Please fill the fields.");
       return;
     }
 
-    const newPerson = {
-      id: String(persons.length + 1),
-      name: newName,
-      number: newNumber,
-    };
+    const existedPerson = persons.find(
+      (person) => person.name.toLowerCase() === newName.toLowerCase(),
+    );
 
-    setPersons(persons.concat(newPerson));
-    setNewName("");
-    setNewNumber("");
+    if (existedPerson) {
+      // Function to clean the number from the space and dash
+      const cleanNumber = (num) => num.replace(/[\s-]/g, "");
+
+      const isDifferentNumber =
+        cleanNumber(existedPerson.number) !== cleanNumber(newNumber);
+
+      if (isDifferentNumber) {
+        const confirmUpdate = window.confirm(
+          `${newName} is already added to phonebook with a different number. Do you want to update the number?`,
+        );
+
+        if (confirmUpdate) {
+          personsService
+            .update(existedPerson.id, {
+              ...existedPerson,
+              number: newNumber,
+            })
+            .then((updatedPerson) => {
+              setPersons(
+                persons.map((person) =>
+                  person.id === updatedPerson.id ? updatedPerson : person,
+                ),
+              );
+            });
+
+          setNewName("");
+          setNewNumber("");
+        }
+      } else {
+        alert(
+          `${newName} is already added to phonebook with this exact number.`,
+        );
+      }
+    } else {
+      const newPerson = {
+        name: newName,
+        number: newNumber,
+      };
+
+      personsService.create(newPerson).then((returnedPerson) => {
+        setPersons(persons.concat(returnedPerson));
+        setNewName("");
+        setNewNumber("");
+      });
+    }
   };
 
   // filtering
   const handleFilterChange = (e) => {
     setFilter(e.target.value);
+  };
+
+  // delete person
+  const handleDeletePerson = (id) => {
+    const deletedPerson = persons.find((person) => person.id === id);
+
+    if (
+      window.confirm(`Are you sure you want to delete ${deletedPerson.name}?`)
+    ) {
+      personsService.deletePerson(id).then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
+      });
+    }
   };
 
   const filteredPersons = persons.filter((person) =>
@@ -68,7 +118,7 @@ const App = () => {
       <div>
         <h3>Add a new person</h3>
         <PersonForm
-          addName={addName}
+          addPerson={addPerson}
           newName={newName}
           handleNameChange={handleNameChange}
           newNumber={newNumber}
@@ -78,7 +128,10 @@ const App = () => {
 
       <div>
         <h2>Numbers</h2>
-        <PersonsList filteredPersons={filteredPersons} />
+        <PersonsList
+          filteredPersons={filteredPersons}
+          handleDeletePerson={handleDeletePerson}
+        />
       </div>
     </div>
   );
