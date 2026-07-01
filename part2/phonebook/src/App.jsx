@@ -3,12 +3,15 @@ import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import PersonsList from "./components/PersonsList";
 import personsService from "./services/persons";
+import Notification from "./components/Notification";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState(null);
+  const [notificationType, setNotificationType] = useState("");
 
   // get persons fron the server
   useEffect(() => {
@@ -64,6 +67,13 @@ const App = () => {
                   person.id === updatedPerson.id ? updatedPerson : person,
                 ),
               );
+            })
+            .catch(() => {
+              // set error message
+              setNotificationMessage(
+                "The person has already been removed from the server.",
+              );
+              setNotificationType("error");
             });
 
           setNewName("");
@@ -80,11 +90,27 @@ const App = () => {
         number: newNumber,
       };
 
-      personsService.create(newPerson).then((returnedPerson) => {
-        setPersons(persons.concat(returnedPerson));
-        setNewName("");
-        setNewNumber("");
-      });
+      personsService
+        .create(newPerson)
+        .then((returnedPerson) => {
+          setPersons(persons.concat(returnedPerson));
+          setNewName("");
+          setNewNumber("");
+        })
+        .catch(() => {
+          // set error message
+          setNotificationMessage(
+            "Sorry, there was an error adding the person.",
+          );
+          setNotificationType("error");
+        });
+
+      // set success message
+      setNotificationMessage(`${newName} has been added to the phonebook.`);
+      setNotificationType("success");
+      setTimeout(() => {
+        setNotificationMessage(null);
+      }, 5000);
     }
   };
 
@@ -100,9 +126,16 @@ const App = () => {
     if (
       window.confirm(`Are you sure you want to delete ${deletedPerson.name}?`)
     ) {
-      personsService.deletePerson(id).then(() => {
-        setPersons(persons.filter((person) => person.id !== id));
-      });
+      personsService
+        .deletePerson(id)
+        .then(() => {
+          setPersons(persons.filter((person) => person.id !== id));
+        })
+        .catch(() => {
+          // set error message
+          setNotificationMessage("Sorry, you cannot delete this person.");
+          setNotificationType("error");
+        });
     }
   };
 
@@ -111,8 +144,10 @@ const App = () => {
   );
 
   return (
-    <div>
+    <div className="phonebook">
       <h2>Phonebook</h2>
+
+      <Notification message={notificationMessage} type={notificationType} />
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
 
       <div>
