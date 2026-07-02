@@ -1,14 +1,25 @@
-const CountriesList = ({ countries }) => {
+import CountryCard from "./CountryCard";
+
+const CountriesList = ({ countries, handleShowDetails }) => {
   //
   if (countries === null) {
     //
     return <p>Enter the name of a country.</p>;
   } else if (countries.length > 1 && countries.length <= 10) {
     //
+
     return (
       <ul>
         {countries.map((country) => (
-          <li key={country.name.common}>{country.name.common}</li>
+          <li key={country?.name?.common} style={{ marginBottom: "10px" }}>
+            {country?.name?.common}
+            <button
+              style={{ marginLeft: "10px" }}
+              onClick={() => handleShowDetails(country)}
+            >
+              Show details
+            </button>
+          </li>
         ))}
       </ul>
     );
@@ -17,27 +28,8 @@ const CountriesList = ({ countries }) => {
     return <p>Too many matches, specify another filter</p>;
   } else if (countries.length === 1) {
     //
-    const { name, capital, area, languages, flags } = countries[0];
 
-    return (
-      <div>
-        <h1>{name?.common}</h1>
-        <p>Capital: {capital}</p>
-        <p>Area: {area}</p>
-        <hr />
-        <h2>Languages</h2>
-        <ul>
-          {Object.values(languages || {}).map((language) => (
-            <li key={language}>{language}</li>
-          ))}
-        </ul>
-        <img
-          src={flags?.png}
-          alt={`${name?.common} flag`}
-          style={{ border: "1px solid black" }}
-        />
-      </div>
-    );
+    return <CountryCard country={countries[0]} />;
   } else {
     //
     return <p>No countries found.</p>;
