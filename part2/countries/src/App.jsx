@@ -26,6 +26,7 @@ function App() {
     setCountryName(e.target.value);
     setCountryDetails(null);
   };
+
   //
   const countriesToShow =
     allCountries && countryName
@@ -36,7 +37,6 @@ function App() {
 
   //
   const handleShowDetails = (country) => {
-    console.log(country);
     setCountryDetails(country);
   };
 
