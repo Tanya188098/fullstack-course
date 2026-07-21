@@ -1,7 +1,18 @@
 const express = require("express");
+var morgan = require("morgan");
+
 const app = express();
 
 app.use(express.json());
+
+// logger
+morgan.token("body", (req) => {
+  return req.method === "POST" ? JSON.stringify(req.body) : "";
+});
+
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time :body"),
+);
 
 let persons = [
   {
