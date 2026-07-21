@@ -1,31 +1,107 @@
 const express = require("express");
 const app = express();
 
+app.use(express.json());
+
 let persons = [
   {
-    id: "1",
+    id: 1,
     name: "Arto Hellas",
     number: "040-123456",
   },
   {
-    id: "2",
+    id: 2,
     name: "Ada Lovelace",
     number: "39-44-5323523",
   },
   {
-    id: "3",
+    id: 3,
     name: "Dan Abramov",
     number: "12-43-234345",
   },
   {
-    id: "4",
+    id: 4,
     name: "Mary Poppendieck",
     number: "39-23-6423122",
   },
 ];
 
+// get the list of people
 app.get("/api/persons", (request, response) => {
   response.json(persons);
+});
+
+// get information
+app.get("/api/info", (request, response) => {
+  // Create date and time during the request
+  const currentDate = new Date();
+
+  response.send(`
+    <div>
+      <p>Phonebook has info for ${persons.length} people</p>
+      <p>${currentDate}</p>
+    </div>
+  `);
+});
+
+// get person by id
+app.get("/api/persons/:id", (request, response) => {
+  const id = Number(request.params.id);
+  const person = persons.find((person) => person.id === id);
+  if (person) {
+    response.json(person);
+  } else {
+    response.send(`
+      <p>Error 404: The person is not found.</p>
+  `);
+  }
+});
+
+// delete person by id
+app.delete("/api/persons/:id", (request, response) => {
+  const id = request.params.id;
+  persons = persons.filter((person) => person.id !== id);
+
+  response.status(204).end();
+});
+
+// add new person entity
+const generateId = () => {
+  const id = Math.floor(Math.random() * 1000000);
+  return id;
+};
+
+app.post("/api/persons", (request, response) => {
+  const body = request.body;
+
+  if (!body.name) {
+    return response.status(400).json({
+      error: "Person name missing",
+    });
+  }
+
+  if (!body.number) {
+    return response.status(400).json({
+      error: "Person number missing",
+    });
+  }
+
+  const nameExists = persons.some((p) => p?.name === body.name);
+  if (nameExists) {
+    return response.status(400).json({
+      error: "Name must be unique",
+    });
+  }
+
+  const person = {
+    id: generateId(),
+    name: body.name,
+    number: body.number,
+  };
+
+  persons = persons.concat(person);
+
+  response.json(person);
 });
 
 const PORT = 3001;
