@@ -1,8 +1,10 @@
 const express = require("express");
 var morgan = require("morgan");
+const cors = require("cors");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 // logger
@@ -39,6 +41,7 @@ let persons = [
 
 // get the list of people
 app.get("/api/persons", (request, response) => {
+  console.log("GET /api/persons — запрос получен!");
   response.json(persons);
 });
 
@@ -59,18 +62,17 @@ app.get("/api/info", (request, response) => {
 app.get("/api/persons/:id", (request, response) => {
   const id = Number(request.params.id);
   const person = persons.find((person) => person.id === id);
+
   if (person) {
     response.json(person);
   } else {
-    response.send(`
-      <p>Error 404: The person is not found.</p>
-  `);
+    response.status(404).end();
   }
 });
 
 // delete person by id
 app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
+  const id = Number(request.params.id);
   persons = persons.filter((person) => person.id !== id);
 
   response.status(204).end();
@@ -115,7 +117,7 @@ app.post("/api/persons", (request, response) => {
   response.json(person);
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
