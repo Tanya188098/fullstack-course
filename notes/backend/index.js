@@ -4,13 +4,11 @@ const express = require("express");
 const app = express();
 const Note = require("./models/note");
 
-let notes = [];
-
 app.use(express.json());
 app.use(express.static("dist"));
 
 // get notes from the database
-app.get("/api/notes", (request, response) => {
+app.get("/api/notes", (request, response, next) => {
   Note.find({})
     .then((notes) => {
       response.json(notes);
@@ -33,7 +31,7 @@ app.get("/api/notes/:id", (request, response, next) => {
 });
 
 // add a new note to the database
-app.post("/api/notes", (request, response) => {
+app.post("/api/notes", (request, response, next) => {
   const body = request.body;
 
   if (!body.content) {
