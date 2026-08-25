@@ -15,17 +15,21 @@ app.get("/api/notes", (request, response) => {
     .then((notes) => {
       response.json(notes);
     })
-    .catch((error) => {
-      console.log("Error to fetch notes:", error.message);
-      response.status(500).json({ error: "Database query failed" });
-    });
+    .catch((error) => next(error));
 });
 
 // get a note by id from the database
-app.get("/api/notes/:id", (request, response) => {
-  Note.findById(request.params.id).then((note) => {
-    response.json(note);
-  });
+app.get("/api/notes/:id", (request, response, next) => {
+  Note.findById(request.params.id)
+    .then((note) => {
+      if (note) {
+        response.json(note);
+      } else {
+        response.status(404).end();
+      }
+    })
+
+    .catch((error) => next(error));
 });
 
 // add a new note to the database
@@ -46,22 +50,36 @@ app.post("/api/notes", (request, response) => {
     .then((savedNote) => {
       response.json(savedNote);
     })
-    .catch((error) => {
-      console.log("Error to save a note:", error.message);
-      response.status(500).json({ error: "Failed to save note" });
-    });
+    .catch((error) => next(error));
 });
 
 // delete a note by id from the database
-app.delete("/api/notes/:id", (request, response) => {
+app.delete("/api/notes/:id", (request, response, next) => {
   Note.findByIdAndDelete(request.params.id)
-    .then(() => {
+    .then((result) => {
       response.status(204).end();
     })
-    .catch((error) => {
-      console.log("Error to delete note:", error.message);
-      response.status(400).send({ error: "malformatted id" });
-    });
+    .catch((error) => next(error));
+});
+
+// update a note by id with important field
+app.put("/api/notes/:id", (request, response, next) => {
+  const { content, important } = request.body;
+
+  Note.findById(request.params.id)
+    .then((note) => {
+      if (!note) {
+        return response.status(404).end();
+      }
+
+      note.content = content;
+      note.important = important;
+
+      return note.save().then((updatedNote) => {
+        response.json(updatedNote);
+      });
+    })
+    .catch((error) => next(error));
 });
 
 const unknownEndpoint = (request, response) => {
@@ -70,7 +88,19 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT;
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
