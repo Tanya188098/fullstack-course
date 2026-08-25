@@ -2,8 +2,9 @@ require("dotenv").config();
 
 const express = require("express");
 const app = express();
-
 const Note = require("./models/note");
+
+let notes = [];
 
 app.use(express.json());
 app.use(express.static("dist"));
