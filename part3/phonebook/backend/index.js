@@ -20,39 +20,44 @@ app.use(
 );
 
 // get the list of people
-app.get("/api/persons", (request, response) => {
+app.get("/api/persons", (request, response, next) => {
   Person.find({})
     .then((persons) => {
       response.json(persons);
     })
-    .catch((error) => {
-      console.log("Error to fetch persons: ", error.message);
-      response.status(500).json({ error: "Failed to fetch persons" });
-    });
+    .catch((error) => next(error));
 });
 
 // get information
-app.get("/api/info", (request, response) => {
-  // Create date and time during the request
-  const currentDate = new Date();
-
-  response.send(`
-    <div>
-      <p>Phonebook has info for ${persons.length} people</p>
-      <p>${currentDate}</p>
-    </div>
-  `);
+// get information
+app.get("/info", (request, response, next) => {
+  Person.find({})
+    .then((persons) => {
+      response.send(`
+        <div>
+          <p>Phonebook has info for ${persons.length} people</p>
+          <p>${new Date()}</p>
+        </div>
+      `);
+    })
+    .catch((error) => next(error));
 });
 
 // get person by id
-app.get("/api/persons/:id", (request, response) => {
-  Person.findById(request.params.id).then((person) => {
-    response.json(person);
-  });
+app.get("/api/persons/:id", (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
 });
 
 // add new person entity
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
 
   if (!body.name) {
@@ -67,13 +72,6 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const nameExists = persons.some((p) => p?.name === body.name);
-  if (nameExists) {
-    return response.status(400).json({
-      error: "Name must be unique",
-    });
-  }
-
   const person = new Person({
     name: body.name,
     number: body.number,
@@ -84,23 +82,51 @@ app.post("/api/persons", (request, response) => {
     .then((savedPerson) => {
       response.json(savedPerson);
     })
-    .catch((error) => {
-      console.log("Error saving person: ", error.message);
-      response.status(500).json({ error: "Failed to save person" });
-    });
+    .catch((error) => next(error));
+});
+
+//update contact number by id
+app.put("/api/persons/:id", (request, response, next) => {
+  const { name, number } = request.body;
+
+  Person.findById(request.params.id).then((person) => {
+    if (!person) {
+      return response.status(404).end();
+    }
+
+    if (person.name === name) {
+      person.number = number;
+      person
+        .save()
+        .then((updatedPerson) => {
+          response.json(updatedPerson);
+        })
+        .catch((error) => next(error));
+    }
+  });
 });
 
 // delete person by id
-app.delete("/api/persons/:id", (request, response) => {
+app.delete("/api/persons/:id", (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
     .then(() => {
       response.status(204).end();
     })
-    .catch((error) => {
-      console.log("Error deleting person: ", error.message);
-      response.status(500).json({ error: "Failed to delete person" });
-    });
+    .catch((error) => next(error));
 });
+
+// error middleware
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
