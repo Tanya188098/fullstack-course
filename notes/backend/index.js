@@ -5,80 +5,62 @@ const app = express();
 
 const Note = require("./models/note");
 
-let notes = [
-  {
-    id: "1",
-    content: "HTML is easy",
-    important: true,
-  },
-  {
-    id: "2",
-    content: "Browser can execute only JavaScript",
-    important: false,
-  },
-  {
-    id: "3",
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true,
-  },
-];
-
 app.use(express.json());
 app.use(express.static("dist"));
 
+// get notes from the database
 app.get("/api/notes", (request, response) => {
   Note.find({})
     .then((notes) => {
       response.json(notes);
     })
     .catch((error) => {
-      console.log("Error to get notes:", error.message);
+      console.log("Error to fetch notes:", error.message);
       response.status(500).json({ error: "Database query failed" });
     });
 });
 
+// get a note by id from the database
 app.get("/api/notes/:id", (request, response) => {
-  const id = request.params.id;
-  const note = notes.find((note) => note.id === id);
-
-  if (note) {
+  Note.findById(request.params.id).then((note) => {
     response.json(note);
-  } else {
-    response.status(404).end();
-  }
+  });
 });
 
-const generateId = () => {
-  const maxId =
-    notes.length > 0 ? Math.max(...notes.map((n) => Number(n.id))) : 0;
-  return String(maxId + 1);
-};
-
+// add a new note to the database
 app.post("/api/notes", (request, response) => {
   const body = request.body;
 
   if (!body.content) {
-    return response.status(400).json({
-      error: "content missing",
-    });
+    return response.status(400).json({ error: "content missing" });
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
-    id: generateId(),
-  };
+  });
 
-  notes = notes.concat(note);
-
-  response.json(note);
+  note
+    .save()
+    .then((savedNote) => {
+      response.json(savedNote);
+    })
+    .catch((error) => {
+      console.log("Error to save a note:", error.message);
+      response.status(500).json({ error: "Failed to save note" });
+    });
 });
 
+// delete a note by id from the database
 app.delete("/api/notes/:id", (request, response) => {
-  const id = request.params.id;
-  notes = notes.filter((note) => note.id !== id);
-
-  response.status(204).end();
+  Note.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end();
+    })
+    .catch((error) => {
+      console.log("Error to delete note:", error.message);
+      response.status(400).send({ error: "malformatted id" });
+    });
 });
 
 const unknownEndpoint = (request, response) => {
