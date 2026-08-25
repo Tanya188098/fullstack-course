@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 
+const Note = require("./models/note");
+
 let notes = [
   {
     id: "1",
@@ -32,7 +34,9 @@ app.use(express.static("dist"));
 app.use(requestLogger);
 
 app.get("/api/notes", (request, response) => {
-  response.json(notes);
+  Note.find({}).then((notes) => {
+    response.json(notes);
+  });
 });
 
 app.get("/api/notes/:id", (request, response) => {
