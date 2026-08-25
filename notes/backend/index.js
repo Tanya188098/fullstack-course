@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const app = express();
 
@@ -21,22 +23,18 @@ let notes = [
   },
 ];
 
-const requestLogger = (request, response, next) => {
-  console.log("Method:", request.method);
-  console.log("Path:  ", request.path);
-  console.log("Body:  ", request.body);
-  console.log("---");
-  next();
-};
-
 app.use(express.json());
 app.use(express.static("dist"));
-app.use(requestLogger);
 
 app.get("/api/notes", (request, response) => {
-  Note.find({}).then((notes) => {
-    response.json(notes);
-  });
+  Note.find({})
+    .then((notes) => {
+      response.json(notes);
+    })
+    .catch((error) => {
+      console.log("Error to get notes:", error.message);
+      response.status(500).json({ error: "Database query failed" });
+    });
 });
 
 app.get("/api/notes/:id", (request, response) => {
@@ -89,7 +87,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
